@@ -1,9 +1,9 @@
-import { ERROR_MESSAGES, MAX_DURATION } from '@/constants';
+import { ERROR_MESSAGES } from '@/constants';
 import { getMiniMaxClient } from '@/lib/minimax';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Next.js Route Segment Config — tells Vercel to allow this function to run longer
-export const maxDuration = MAX_DURATION.SCRIPT;
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
