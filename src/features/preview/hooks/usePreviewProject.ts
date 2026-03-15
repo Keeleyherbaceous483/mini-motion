@@ -9,7 +9,7 @@ import { useGetProject } from '@/services/projects/queries';
 import { useUpdateScene } from '@/services/scenes/mutations';
 import { Project } from '@/types';
 import { type User } from '@supabase/supabase-js';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export function usePreviewProject(projectId: string | string[], user: User | null) {
   const id = Array.isArray(projectId) ? projectId[0] : projectId;
@@ -51,17 +51,36 @@ export function usePreviewProject(projectId: string | string[], user: User | nul
     !!firstProcessingScene
   );
 
+  // Use refs to access latest values without adding them as effect dependencies
+  const updateSceneMutationRef = useRef(updateSceneMutation);
+  updateSceneMutationRef.current = updateSceneMutation;
+  const refetchRef = useRef(refetch);
+  refetchRef.current = refetch;
+  const projectRef = useRef(project);
+  projectRef.current = project;
+
+  // Track which task ID we've already triggered a mutation for to prevent re-firing
+  const handledTaskIdRef = useRef<string | null>(null);
+
   // Auto-update scene when video task completes
   useEffect(() => {
+    const currentProject = projectRef.current;
+    const taskId = firstProcessingScene?.video_task_id ?? null;
+
     if (
       videoTaskData &&
       firstProcessingScene &&
-      project &&
-      (videoTaskData.taskStatus === 'Success' || videoTaskData.taskStatus === 'Fail')
+      currentProject &&
+      taskId &&
+      (videoTaskData.taskStatus === 'Success' || videoTaskData.taskStatus === 'Fail') &&
+      handledTaskIdRef.current !== taskId
     ) {
-      updateSceneMutation.mutate(
+      // Mark this task as handled so we don't fire the mutation again
+      handledTaskIdRef.current = taskId;
+
+      updateSceneMutationRef.current.mutate(
         {
-          projectId: project.id,
+          projectId: currentProject.id,
           sceneId: firstProcessingScene.id,
           data: {
             video_url: videoTaskData.videoUrl,
@@ -69,11 +88,11 @@ export function usePreviewProject(projectId: string | string[], user: User | nul
           },
         },
         {
-          onSuccess: () => refetch(),
+          onSuccess: () => refetchRef.current(),
         }
       );
     }
-  }, [videoTaskData, firstProcessingScene, project, updateSceneMutation, refetch]);
+  }, [videoTaskData, firstProcessingScene]);
 
   const handleGenerateAsset = async (type: 'video' | 'audio' | 'music', sceneIndex?: number) => {
     if (!project) return;

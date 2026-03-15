@@ -1,5 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  poweredByHeader: false,
+  reactStrictMode: true,
+  compiler: {
+    removeConsole: {
+      exclude: ['error', 'warn'],
+    },
+  },
   images: {
     remotePatterns: [
       {
