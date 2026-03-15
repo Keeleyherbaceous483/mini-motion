@@ -78,6 +78,25 @@ export async function PATCH(
       }
     }
 
+    // Handle failed video - mark project as failed if all videos are either completed or failed
+    if (video_status === 'failed') {
+      const incompleteScenes = await db
+        .select({ id: scenes.id })
+        .from(scenes)
+        .where(
+          and(eq(scenes.projectId, id), inArray(scenes.videoStatus, ['pending', 'processing']))
+        )
+        .limit(1);
+
+      // Only mark project as failed if there are no more pending/processing scenes
+      if (incompleteScenes.length === 0) {
+        await db
+          .update(projects)
+          .set({ status: 'failed' as const })
+          .where(eq(projects.id, id));
+      }
+    }
+
     return NextResponse.json({ scene: toSnakeCase(result[0]) });
   } catch (error) {
     console.error('Error updating scene:', error);

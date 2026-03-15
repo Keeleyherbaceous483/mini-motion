@@ -1,13 +1,27 @@
+import { useEffect } from 'react';
 import { type User } from '@supabase/supabase-js';
 import { useGetAllProjects } from '@/services/projects/queries';
 
-// user parameter kept for API compatibility - TanStack Query handles auth internally
 export function useDashboardProjects(user: User | null) {
-  void user; // Acknowledge parameter for backward compatibility
+  void user;
   const { data, isLoading, refetch } = useGetAllProjects();
 
+  const projects = data?.projects ?? [];
+  const hasProcessingProjects = projects.some(p => p.status === 'processing');
+
+  // Auto-refresh when there are processing projects
+  useEffect(() => {
+    if (!hasProcessingProjects) return;
+
+    const interval = setInterval(() => {
+      refetch();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [hasProcessingProjects, refetch]);
+
   return {
-    projects: data?.projects ?? [],
+    projects,
     projectsLoading: isLoading,
     fetchProjects: refetch,
   };
