@@ -67,7 +67,7 @@ export function useEditor(user: User | null) {
 
       const newProjectId = projectData.project.id;
 
-      const scenesResponse = await fetch(`/ api / projects / ${newProjectId}/scenes`, {
+      const scenesResponse = await fetch(`/api/projects/${newProjectId}/scenes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenes: script.scenes }),
